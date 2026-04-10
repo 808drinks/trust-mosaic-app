@@ -306,21 +306,15 @@ const DOCUMENTS = [
     fields: [],
   },
   {
-    key: 'BankAccount',
-    label: '통장사본',
-    subtitle: '계좌 확인 서류',
-    fields: [],
-  },
-  {
-    key: 'ContractSample',
-    label: '위탁계약서 표본',
-    subtitle: '계약서 참고 자료',
-    fields: [],
-  },
-  {
     key: 'privacy_document',
     label: '보안서약서',
     subtitle: '기관 측에서 보관',
+    fields: [],
+  },
+  {
+    key: 'consent_document',
+    label: '개인정보처리동의서',
+    subtitle: '제외인물 서명 후 기관 보관',
     fields: [],
   },
   {
@@ -340,12 +334,6 @@ const DOCUMENTS = [
       { key: 'price2', label: '가격2', placeholder: '예: 35000', type: 'number' },
       { key: 'product_spec2', label: '규격2', placeholder: '예: 5곳 이하 5분 이하' },
     ],
-  },
-  {
-    key: 'consent_document',
-    label: '개인정보처리동의서',
-    subtitle: '제외인물 서명 후 기관 보관',
-    fields: [],
   },
   {
     key: 'security_agreement_document',
@@ -372,13 +360,16 @@ const DOCUMENTS = [
     ],
   },
   {
-    key: 'custom_document',
-    label: '직접 서류 작성 (자유 양식)',
-    subtitle: '직접 텍스트를 입력하여 문서를 생성합니다',
-    fields: [
-      { key: 'custom_title', label: '서류 이름', placeholder: '예: 출장보고서' },
-      { key: 'custom_content', label: '서류 내용', placeholder: '내용을 작성해주세요...', type: 'textarea' },
-    ],
+    key: 'ContractSample',
+    label: '위탁계약서 표본',
+    subtitle: '계약서 참고 자료',
+    fields: [],
+  },
+  {
+    key: 'BankAccount',
+    label: '통장사본',
+    subtitle: '계좌 확인 서류',
+    fields: [],
   },
 ];
 
@@ -390,7 +381,7 @@ export default function Home() {
   const [organization, setOrganization] = useState('');
   const [email1, setEmail1] = useState('');
   const [email2, setEmail2] = useState('');
-  const [selectedDocs, setSelectedDocs] = useState({});
+  const [selectedDocs, setSelectedDocs] = useState({ BizTemplate: true });
   const [docFields, setDocFields] = useState({});
   const [mailSubject, setMailSubject] = useState('트러스트 모자이크입니다. 개인정보 관련 서류 및 견적서 보내드립니다.');
   const [mailBody, setMailBody] = useState('');
