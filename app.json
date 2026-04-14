@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "d7ed8bbd-751d-4ec3-8e13-3c93229c8def"
+      }
+    },
+    "android": {
+      "package": "com.angdra.trustofficial"
+    }
+  }
+}

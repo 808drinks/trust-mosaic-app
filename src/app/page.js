@@ -51,6 +51,109 @@ function formatPrice(value) {
 }
 
 // ===========================
+// Helper: 서류 선택에 따른 메일 자동 생성
+// ===========================
+function generateMailContent(selectedDocs, docFields) {
+  const DOC_LABELS = {
+    BizTemplate: '사업자등록증', privacy_document: '보안서약서',
+    consent_document: '개인정보처리동의서', estimate_document: '견적서',
+    estimate_document2: '견적서2', security_agreement_document: '보안확약서',
+    cooperation_letter_document: '협조공문', destruction_confirm_document: '개인정보 파기 확인서',
+    ContractSample: '위탁계약서 표본', BankAccount: '통장사본',
+  };
+
+  const active = Object.keys(selectedDocs).filter(k => selectedDocs[k] && DOC_LABELS[k]);
+  if (active.length === 0) return { subject: '', body: '' };
+
+  const hasEstimate = selectedDocs.estimate_document;
+  const hasEstimate2 = selectedDocs.estimate_document2;
+  const hasAnyEstimate = hasEstimate || hasEstimate2;
+  const nonEstimateDocs = active.filter(k => k !== 'estimate_document' && k !== 'estimate_document2');
+
+  // === 메일 제목 ===
+  let subject = '';
+  if (active.length === 1) {
+    subject = `트러스트 모자이크입니다. ${DOC_LABELS[active[0]]} 서류 보내드립니다.`;
+  } else if (hasAnyEstimate && nonEstimateDocs.length > 0) {
+    subject = '트러스트 모자이크입니다. 요청하신 서류 및 견적서 보내드립니다.';
+  } else if (hasAnyEstimate && nonEstimateDocs.length === 0) {
+    subject = '트러스트 모자이크입니다. 견적서 송부 드립니다.';
+  } else {
+    subject = '트러스트 모자이크입니다. 요청하신 서류 보내드립니다.';
+  }
+
+  // === 메일 본문 ===
+  let body = '트러스트 모자이크 입니다.\n\n';
+
+  // 견적서만 있는 경우
+  if (hasAnyEstimate && nonEstimateDocs.length === 0) {
+    body += '견적서 송부 드립니다.\n\n';
+  } else if (hasAnyEstimate) {
+    body += '개인정보 관련 서류 및 견적서 보내드립니다.\n\n';
+  } else if (active.length === 1 && active[0] === 'BizTemplate') {
+    body += '사업자등록증 서류 보내드립니다.\n\n';
+  } else {
+    body += '개인정보 관련 서류 보내드립니다.\n\n';
+  }
+
+  // 서류별 안내 메시지
+  const notes = [];
+  if (selectedDocs.privacy_document) notes.push("* '보안서약서' → 기관 측에서 보관하시면 됩니다");
+  if (selectedDocs.consent_document) {
+    notes.push("* '개인정보처리동의서' → 제외인물 서명후 기관에서 보관해 주시면 됩니다.");
+    notes.push("\n서명 받으신 뒤 저희에게도 스캔 또는 촬영하여 보내주시면 감사드리겠습니다. ^^");
+  }
+  if (selectedDocs.security_agreement_document) notes.push("* '보안확약서' → 기관 측에서 보관하시면 됩니다");
+  if (selectedDocs.cooperation_letter_document) notes.push("* '공문서' → 기관 측에서 보관하시면 됩니다");
+  if (selectedDocs.destruction_confirm_document) notes.push("* '파기 확인서' → 기관 측에서 보관하시면 됩니다");
+
+  if (notes.length > 0) body += notes.join('\n') + '\n\n';
+
+  // 견적서 상세(2개)
+  const est = docFields.estimate_document || {};
+  const est2 = docFields.estimate_document2 || {};
+  const p1 = parseInt(String(est.price || '0').replace(/[^\d]/g, '')) || 0;
+  const p2 = parseInt(String(est2.price2 || '0').replace(/[^\d]/g, '')) || 0;
+
+  if (hasEstimate && hasEstimate2 && p1 && p2) {
+    const cheap = p1 <= p2 ? p1 : p2;
+    const expensive = p1 > p2 ? p1 : p2;
+    body += `견적서 A : ${cheap.toLocaleString('ko-KR')}원 (배경전체 블러처리 + 특정인 제외 모자이크 처리)\n`;
+    body += `견적서 B : ${expensive.toLocaleString('ko-KR')}원 (특정인 외 모든인물 얼굴 일일히 모자이크)\n`;
+    body += '둘 중 하나 선택하셔서 결재 해주시면 됩니다. ^^\n\n';
+  }
+
+  // 견적서 결제 안내
+  if (hasAnyEstimate) {
+    body += '계좌 이체 시 계좌번호 : 카카오 3333-21-2104308 (예금주 : 정연화), 현금영수증 신청시 사업자번호 또는 핸드폰 번호 알려주시면 됩니다.\n\n';
+    body += '홈페이지 결제시 트러스트 모자이크 홈페이지 하단에서 카드결제 ISP 로 진행해주시면 됩니다.\n';
+    body += '홈페이지 링크 (링크 : https://trustmozaik.kr/)\n\n';
+  }
+
+  body += '추가적으로 필요한 서류나 문의사항이 있으실 경우 010-3904-5597로 연락주시면 안내드리겠습니다 ^^ (보안확약서, 위탁계약서 등)\n\n';
+
+  // 붙임
+  const attachments = [];
+  const attachOrder = ['BizTemplate','privacy_document','consent_document','estimate_document','estimate_document2','security_agreement_document','cooperation_letter_document','destruction_confirm_document','ContractSample','BankAccount'];
+  for (const k of attachOrder) {
+    if (!selectedDocs[k]) continue;
+    let label = DOC_LABELS[k];
+    if (hasEstimate && hasEstimate2) {
+      if (k === 'estimate_document') label = '견적서 A';
+      if (k === 'estimate_document2') label = '견적서 B';
+    }
+    attachments.push(label);
+  }
+  if (attachments.length === 1) {
+    body += `붙임  ${attachments[0]} 1부.  끝.`;
+  } else {
+    body += '붙임  ' + attachments.map((a, i) => `${i + 1}. ${a} 1부.`).join('\n        ') + '  끝.';
+  }
+
+  return { subject, body };
+}
+
+// ===========================
 // Toast Component
 // ===========================
 function ToastContainer({ toasts, removeToast }) {
@@ -383,9 +486,10 @@ export default function Home() {
   const [email2, setEmail2] = useState('');
   const [selectedDocs, setSelectedDocs] = useState({ BizTemplate: true });
   const [docFields, setDocFields] = useState({});
-  const [mailSubject, setMailSubject] = useState('트러스트 모자이크입니다. 개인정보 관련 서류 및 견적서 보내드립니다.');
+  const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [sheetWrite, setSheetWrite] = useState(true);
+  const [manualEdit, setManualEdit] = useState(false);
   
   // Data State
   const [savedMessages, setSavedMessages] = useState([]);
@@ -401,6 +505,16 @@ export default function Home() {
   const [toasts, setToasts] = useState([]);
   const [editMail, setEditMail] = useState(false);
   const toastIdRef = useRef(0);
+
+  // ===========================
+  // Auto-generate mail content
+  // ===========================
+  useEffect(() => {
+    if (manualEdit) return;
+    const { subject, body } = generateMailContent(selectedDocs, docFields);
+    setMailSubject(subject);
+    setMailBody(body);
+  }, [selectedDocs, docFields, manualEdit]);
 
   // ===========================
   // Toast
@@ -485,7 +599,7 @@ export default function Home() {
   const applyMessage = (msg) => {
     if (msg.mail_subject) setMailSubject(msg.mail_subject);
     setMailBody(msg.mail_body);
-    addToast(`"${msg.title}" 멘트가 적용되었습니다`, 'success');
+    setManualEdit(true);
   };
 
   const saveMessage = async (form) => {
@@ -617,7 +731,6 @@ export default function Home() {
       const est2Fields = docFields.estimate_document2 || {};
       const coopFields = docFields.cooperation_letter_document || {};
       const destructFields = docFields.destruction_confirm_document || {};
-      const customFields = docFields.custom_document || {};
 
       const priceNum = estimateFields.price 
         ? parseInt(String(estimateFields.price).replace(/[^\d]/g, '')) 
@@ -646,7 +759,6 @@ export default function Home() {
         security_agreement_document: selectedDocs.security_agreement_document || false,
         cooperation_letter_document: selectedDocs.cooperation_letter_document || false,
         destruction_confirm_document: selectedDocs.destruction_confirm_document || false,
-        custom_document: selectedDocs.custom_document || false,
         price_korean: priceNum ? numberToKorean(priceNum) : '',
         product_spec: estimateFields.product_spec || '',
         price_korean2: price2Num ? numberToKorean(price2Num) : '',
@@ -655,8 +767,6 @@ export default function Home() {
         video_datetime_location: coopFields.video_datetime_location || '',
         video_content: coopFields.video_content || '',
         disposal_date: destructFields.disposal_date || '',
-        custom_document_title: customFields.custom_title || '',
-        custom_document_content: customFields.custom_content || '',
       };
 
       const res = await fetch('/api/send', {
@@ -850,10 +960,15 @@ export default function Home() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               자주 쓰는 멘트 관리
             </button>
-            <button className="btn btn-ghost" onClick={() => setEditMail(!editMail)}>
+            <button className="btn btn-ghost" onClick={() => { setEditMail(!editMail); if (!editMail) setManualEdit(true); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               {editMail ? '미리보기' : '직접 편집'}
             </button>
+            {manualEdit && (
+              <button className="btn btn-ghost" onClick={() => { setManualEdit(false); setEditMail(false); }}>
+                🔄 자동 생성
+              </button>
+            )}
           </div>
         </div>
         <div className="section-body">
@@ -861,7 +976,7 @@ export default function Home() {
           {savedMessages.length > 0 && (
             <div style={{ marginBottom: 'var(--space-4)' }}>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--space-2)', fontWeight: 500 }}>
-                📋 자주 쓰는 멘트 (클릭 시 적용)
+                📋 자주 쓰는 멘트 (클릭 시 바로 적용)
               </div>
               <div className="message-chips">
                 {savedMessages.map((msg) => (
@@ -877,6 +992,12 @@ export default function Home() {
             </div>
           )}
 
+          {manualEdit && (
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--warning)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ✏️ 직접 편집 모드 — 서류 변경해도 자동 갱신되지 않습니다. "🔄 자동 생성" 버튼으로 복원 가능
+            </div>
+          )}
+
           {/* Mail Subject */}
           <div className="form-group">
             <label className="form-label">메일 제목</label>
@@ -884,7 +1005,7 @@ export default function Home() {
               id="mail-subject"
               className="form-input"
               value={mailSubject}
-              onChange={(e) => setMailSubject(e.target.value)}
+              onChange={(e) => { setMailSubject(e.target.value); setManualEdit(true); }}
               placeholder="메일 제목을 입력하세요"
             />
           </div>
@@ -897,7 +1018,7 @@ export default function Home() {
                 id="mail-body"
                 className="form-textarea"
                 value={mailBody}
-                onChange={(e) => setMailBody(e.target.value)}
+                onChange={(e) => { setMailBody(e.target.value); setManualEdit(true); }}
                 placeholder="메일 내용을 입력하세요"
                 rows={12}
               />
@@ -915,7 +1036,7 @@ export default function Home() {
                   color: mailBody ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 }}
               >
-                {mailBody || '자주 쓰는 멘트를 선택하거나 "직접 편집"을 눌러 내용을 입력하세요.'}
+                {mailBody || '서류를 선택하면 메일 내용이 자동으로 생성됩니다.'}
               </div>
             )}
           </div>
