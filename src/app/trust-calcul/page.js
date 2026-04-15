@@ -316,8 +316,8 @@ export default function TrustCalculator() {
       <footer className="info-box">
         <h3>견적 산정 방식 안내</h3>
         <ul className="info-list">
-          <li>기본 요금: 5명 이하 기준 시간대별 책정</li>
-          <li>사람 수: 5명 초과시 5명 단위로 추가 요금 발생</li>
+          <li>기본 요금: 3명 이하 기준 시간대별 책정</li>
+          <li>사람 수: 3명 초과시 3명 단위로 추가 요금 발생</li>
           <li>영상 길이: 시간 초과시 구간별 합산</li>
           <li>움직임: 많은 움직임 선택시 기본 요금의 1.6배 적용</li>
         </ul>
