@@ -1,13 +1,46 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import './calcul.css';
+// ===========================
+// Helper: 숫자를 한글 가격으로 변환
+// ===========================
+function numberToKorean(num) {
+  if (!num || num === 0) return '';
+  const units = ['', '만', '억', '조'];
+  const smallUnits = ['', '십', '백', '천'];
+  const digits = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+  
+  const n = parseInt(String(num).replace(/[^\d]/g, ''));
+  if (isNaN(n) || n === 0) return '';
+  
+  const str = String(n);
+  const len = str.length;
+  let result = '';
+  
+  for (let i = 0; i < len; i++) {
+    const digit = parseInt(str[i]);
+    const pos = len - 1 - i;
+    const bigUnit = Math.floor(pos / 4);
+    const smallUnit = pos % 4;
+    
+    if (digit !== 0) {
+      if (digit === 1 && smallUnit > 0) {
+        result += smallUnits[smallUnit];
+      } else {
+        result += digits[digit] + smallUnits[smallUnit];
+      }
+    }
+    
+    if (smallUnit === 0 && result.length > 0) {
+      result += units[bigUnit];
+    }
+  }
+  
+  return '금 ' + result + '원정';
+}
 
 // ===========================
 // Pricing Constants (VAT included)
 // ===========================
 const COMPLEXITY_MULTIPLIER = 1.6;
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyI-wk2iixj6Kvx82TihoXPexntaSTJPYXNXQjcMrEF-CFk6onOd8yPyf3HxgyLgI0/exec';
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxRUOqma_ULQ9e5j6rAeF8go6fSgy6UCCsRBp0XFs5T23IkRuoj048LOxZqc3UtK3bI/exec';
 
 export default function TrustCalculator() {
   // Input States
@@ -80,7 +113,8 @@ export default function TrustCalculator() {
       vat: finalPrice - Math.round(finalPrice / 1.1),
       people: p,
       time: `${m}분 ${s}초 (청구 기준: ${billingMins}분)`,
-      org: org || '요청 기관'
+      org: org || '요청 기관',
+      priceKorean: numberToKorean(finalPrice)
     });
   };
 
@@ -100,6 +134,7 @@ export default function TrustCalculator() {
     const payload = {
       organization: result.org,
       price: result.total,
+      price_korean: result.priceKorean,
       product_spec: `${result.people}명 / ${result.time} / 움직임 ${movement === 'complex' ? '복잡함' : '보통'}`
     };
 
