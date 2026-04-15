@@ -6,9 +6,7 @@ import './calcul.css';
 // ===========================
 // Pricing Constants (VAT included)
 // ===========================
-const BASE_RATE_PER_MIN = 33000; // 0-5 people
-const EXTRA_PEOPLE_RATE = 11000; // per 5 people
-const COMPLEXITY_MULTIPLIER = 1.2;
+const COMPLEXITY_MULTIPLIER = 1.6;
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyI-wk2iixj6Kvx82TihoXPexntaSTJPYXNXQjcMrEF-CFk6onOd8yPyf3HxgyLgI0/exec';
 
 export default function TrustCalculator() {
@@ -37,27 +35,43 @@ export default function TrustCalculator() {
     const p = parseInt(people) || 0;
     const m = parseInt(minutes) || 0;
     const s = parseInt(seconds) || 0;
-    const totalTimeInSeconds = (m * 60) + s;
-    const timeMultiplier = totalTimeInSeconds / 60;
+    const actualTimeInMins = m + (s / 60);
 
-    if (totalTimeInSeconds === 0) {
+    if (actualTimeInMins === 0) {
       alert('영상 길이를 입력해주세요.');
       return;
     }
 
-    // Calculate Base per min based on people
-    const extraPeopleSets = Math.ceil(Math.max(0, p - 5) / 5);
-    const ratePerMin = BASE_RATE_PER_MIN + (extraPeopleSets * EXTRA_PEOPLE_RATE);
+    // 1. Round up to nearest 5 minutes as per "5분마다 가격 책정"
+    const billingMins = Math.ceil(actualTimeInMins / 5) * 5;
+
+    // 2. Base Pricing for Tier 1 (1-3 people) based on piecewise rules
+    let basePrice = 0;
+    if (billingMins <= 20) {
+      basePrice = billingMins * 5000;
+    } else if (billingMins <= 30) {
+      basePrice = 100000 + ((billingMins - 20) * 1000);
+    } else {
+      // Up to 60m logic: 110k at 30m, 190k at 60m
+      const extraMins = Math.min(60, billingMins) - 30;
+      basePrice = 110000 + (extraMins * (80000 / 30));
+      
+      // Beyond 60m? (Assuming same rate as 30-60 chunk)
+      if (billingMins > 60) {
+        basePrice += (billingMins - 60) * (80000 / 30);
+      }
+    }
+
+    // 3. Multiplier for People Tiers (1-3=1x, 4-6=2x, 7-9=3x, ...)
+    const personMultiplier = Math.ceil(p / 3) || 1;
+    let totalPrice = basePrice * personMultiplier;
     
-    // Total price
-    let totalPrice = ratePerMin * timeMultiplier;
-    
-    // Apply complexity
+    // 4. Multiplier for Complexity (Complex = 1.6x)
     if (movement === 'complex') {
       totalPrice *= COMPLEXITY_MULTIPLIER;
     }
 
-    // Final rounding (e.g., to nearest 10 KRW)
+    // Final rounding to nearest 10 KRW
     const finalPrice = Math.round(totalPrice / 10) * 10;
     
     setResult({
@@ -65,7 +79,7 @@ export default function TrustCalculator() {
       subtotal: Math.round(finalPrice / 1.1),
       vat: finalPrice - Math.round(finalPrice / 1.1),
       people: p,
-      time: `${m}분 ${s}초`,
+      time: `${m}분 ${s}초 (청구 기준: ${billingMins}분)`,
       org: org || '요청 기관'
     });
   };
