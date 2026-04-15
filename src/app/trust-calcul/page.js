@@ -240,7 +240,7 @@ export default function TrustCalculator() {
             onChange={(e) => setMovement(e.target.value)}
           >
             <option value="normal">보통</option>
-            <option value="complex">복잡함 (기본 요금의 1.2배 적용)</option>
+            <option value="complex">복잡함 (기본 요금의 1.6배 적용)</option>
           </select>
         </div>
 
@@ -314,7 +314,7 @@ export default function TrustCalculator() {
           <li>기본 요금: 5명 이하 기준 시간대별 책정</li>
           <li>사람 수: 5명 초과시 5명 단위로 추가 요금 발생</li>
           <li>영상 길이: 시간 초과시 구간별 합산</li>
-          <li>움직임: 많은 움직임 선택시 기본 요금의 1.2배 적용</li>
+          <li>움직임: 많은 움직임 선택시 기본 요금의 1.6배 적용</li>
         </ul>
         <p className="info-footer">※ 모든 가격은 부가세 포함 금액입니다</p>
       </footer>
