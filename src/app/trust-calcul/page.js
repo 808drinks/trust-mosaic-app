@@ -1,3 +1,8 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import './calcul.css';
+
 // ===========================
 // Helper: 숫자를 한글 가격으로 변환
 // ===========================
