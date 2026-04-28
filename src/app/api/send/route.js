@@ -26,7 +26,25 @@ export async function POST(request) {
     
     const responseText = await response.text();
     
+    // Apps Script may return "OK", JSON with status:success, or just HTTP 200
+    let isSuccess = false;
     if (responseText === 'OK') {
+      isSuccess = true;
+    } else {
+      try {
+        const parsed = JSON.parse(responseText);
+        if (parsed.status === 'success' || parsed.result === 'success') {
+          isSuccess = true;
+        }
+      } catch (e) {
+        // Not JSON, check if HTTP response was OK
+        if (response.ok) {
+          isSuccess = true;
+        }
+      }
+    }
+
+    if (isSuccess) {
       return NextResponse.json({ success: true, message: '서류 생성 및 전송 완료!' });
     } else {
       return NextResponse.json({ error: `서류 전송 실패: ${responseText}` }, { status: 500 });
