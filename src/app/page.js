@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { generateSelectedPdfs } from '@/lib/generateDocuments';
 
 // ===========================
 // Helper: 숫자를 한글 가격으로 변환
@@ -740,6 +741,22 @@ export default function Home() {
         ? parseInt(String(est2Fields.price2).replace(/[^\d]/g, '')) 
         : 0;
 
+      // Generate PDFs client-side (HTML canvas → PDF)
+      addToast('📄 서류 PDF 생성 중...', 'info');
+      const pdfFields = {
+        estimate_document: {
+          ...estimateFields,
+          price_korean: priceNum ? numberToKorean(priceNum) : '',
+        },
+        estimate_document2: {
+          ...est2Fields,
+          price_korean2: price2Num ? numberToKorean(price2Num) : '',
+        },
+        cooperation_letter_document: coopFields,
+        destruction_confirm_document: destructFields,
+      };
+      const pdfDocuments = await generateSelectedPdfs(selectedDocs, pdfFields, organization);
+
       const payload = {
         organization,
         email1: email1.trim(),
@@ -752,21 +769,8 @@ export default function Home() {
         BizTemplate: selectedDocs.BizTemplate ? 1 : 0,
         BankAccount: selectedDocs.BankAccount ? 1 : 0,
         ContractSample: selectedDocs.ContractSample ? 1 : 0,
-        privacy_document: selectedDocs.privacy_document || false,
-        estimate_document: selectedDocs.estimate_document || false,
-        estimate_document2: selectedDocs.estimate_document2 || false,
-        consent_document: selectedDocs.consent_document || false,
-        security_agreement_document: selectedDocs.security_agreement_document || false,
-        cooperation_letter_document: selectedDocs.cooperation_letter_document || false,
-        destruction_confirm_document: selectedDocs.destruction_confirm_document || false,
-        price_korean: priceNum ? numberToKorean(priceNum) : '',
-        product_spec: estimateFields.product_spec || '',
-        price_korean2: price2Num ? numberToKorean(price2Num) : '',
-        product_spec2: est2Fields.product_spec2 || '',
-        doc_number: coopFields.doc_number || '',
-        video_datetime_location: coopFields.video_datetime_location || '',
-        video_content: coopFields.video_content || '',
-        disposal_date: destructFields.disposal_date || '',
+        // Pre-generated PDF documents
+        pdfDocuments,
       };
 
       const res = await fetch('/api/send', {

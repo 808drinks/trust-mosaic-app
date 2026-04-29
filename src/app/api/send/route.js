@@ -14,19 +14,35 @@ export async function POST(request) {
     }
     
     const webhookUrl = webhookSettings[0].webhook_url;
+
+    // Build payload for Apps Script
+    // PDF documents are now generated client-side and sent as base64
+    const payload = {
+      organization: body.organization,
+      email1: body.email1,
+      email2: body.email2,
+      title_text: body.title_text,
+      body_text: body.body_text,
+      SheetWrite: body.SheetWrite,
+      price: body.price,
+      price2: body.price2,
+      // Pre-generated PDF documents (base64)
+      pdfDocuments: body.pdfDocuments || [],
+      // Static file flags (these are fetched by Apps Script from URLs)
+      BizTemplate: body.BizTemplate,
+      BankAccount: body.BankAccount,
+      ContractSample: body.ContractSample,
+    };
     
-    // Forward the request to Google Apps Script
+    // Forward to Google Apps Script
     const response = await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     
     const responseText = await response.text();
     
-    // Apps Script may return "OK", JSON with status:success, or just HTTP 200
     let isSuccess = false;
     if (responseText === 'OK') {
       isSuccess = true;
@@ -37,10 +53,7 @@ export async function POST(request) {
           isSuccess = true;
         }
       } catch (e) {
-        // Not JSON, check if HTTP response was OK
-        if (response.ok) {
-          isSuccess = true;
-        }
+        if (response.ok) isSuccess = true;
       }
     }
 
