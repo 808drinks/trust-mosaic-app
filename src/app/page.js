@@ -1,9 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { securityPledgeHTML, privacyConsentHTML } from '@/lib/docTemplates1';
-import { estimateHTML } from '@/lib/docTemplates2';
-import { cooperationLetterHTML, destructionConfirmHTML } from '@/lib/docTemplates3';
 
 // ===========================
 // Helper: 숫자를 한글 가격으로 변환
@@ -511,7 +508,6 @@ export default function Home() {
 
   // Preview state
   const [previewDoc, setPreviewDoc] = useState(null);
-  const previewRef = useRef(null);
 
   // ===========================
   // Auto-generate mail content
@@ -801,8 +797,18 @@ export default function Home() {
   };
 
   // ===========================
-  // Preview
+  // Preview (Google Docs iframe)
   // ===========================
+  const GOOGLE_DOC_IDS = {
+    privacy_document: '1E2R-8yRlaGMLoXE6g54Aqg3yPy4P1XcMn0yGt4-Kvx8',
+    consent_document: '1ZRnbWFHJv5NkaoQHe6HZi9aNuanpeRFiDofCKVGjBLo',
+    estimate_document: '1vRmvik5bJqB6aC4WwIkOX3Z4jiqUdNsFVuCE9BRRwtA',
+    estimate_document2: '1v73P5RLDuVQEHP2OHvjfWHLukf-TkHxtRQWAWHqGSj0',
+    security_agreement_document: '1_zvSKhcK5eSHCeKp7H2-2aXrBocCfMvVbLCyikT2q5E',
+    cooperation_letter_document: '1dGFJcdeYQ7U8Ah2P-yiLcZGHODmqOlTJlXAN_Z4Q19c',
+    destruction_confirm_document: '1HffYhlMDxvTsJqppt6n9uSvj2I7UbMZ_WudDoKKJmSU',
+  };
+
   const PREVIEW_DOCS = [
     { key: 'privacy_document', label: '보안서약서' },
     { key: 'consent_document', label: '개인정보처리동의서' },
@@ -815,44 +821,11 @@ export default function Home() {
 
   const getPreviewableKeys = () => PREVIEW_DOCS.filter(d => selectedDocs[d.key]);
 
-  const renderPreviewHTML = (key) => {
-    const date = new Date().toISOString().slice(0, 10);
-    const org = organization || '(기관명 미입력)';
-    const est = docFields.estimate_document || {};
-    const est2 = docFields.estimate_document2 || {};
-    const coop = docFields.cooperation_letter_document || {};
-    const dest = docFields.destruction_confirm_document || {};
-    const priceNum = est.price ? parseInt(String(est.price).replace(/[^\d]/g, '')) : 0;
-    const price2Num = est2.price2 ? parseInt(String(est2.price2).replace(/[^\d]/g, '')) : 0;
-    const signUrl = '/sign.png';
-    const stampUrl = '/stamp.png';
-
-    switch (key) {
-      case 'security_agreement_document':
-        return securityPledgeHTML({ organization: org, date, signDataUrl: signUrl });
-      case 'privacy_document':
-        return privacyConsentHTML({ organization: org, date, stampDataUrl: stampUrl });
-      case 'consent_document':
-        return privacyConsentHTML({ organization: org, date, stampDataUrl: stampUrl });
-      case 'estimate_document':
-        return estimateHTML({ organization: org, date, stampDataUrl: stampUrl, price: est.price, priceKorean: priceNum ? numberToKorean(priceNum) : '', spec: est.product_spec || '' });
-      case 'estimate_document2':
-        return estimateHTML({ organization: org, date, stampDataUrl: stampUrl, price: est2.price2, priceKorean: price2Num ? numberToKorean(price2Num) : '', spec: est2.product_spec2 || '' });
-      case 'cooperation_letter_document':
-        return cooperationLetterHTML({ organization: org, date, stampDataUrl: stampUrl, docNumber: coop.doc_number || '', videoInfo: coop.video_datetime_location || '', videoContent: coop.video_content || '' });
-      case 'destruction_confirm_document':
-        return destructionConfirmHTML({ organization: org, date, stampDataUrl: stampUrl, signDataUrl: signUrl, disposalDate: dest.disposal_date || '' });
-      default:
-        return '<p>미리보기 없음</p>';
-    }
+  const getGoogleDocsPreviewUrl = (key) => {
+    const docId = GOOGLE_DOC_IDS[key];
+    if (!docId) return null;
+    return `https://docs.google.com/document/d/${docId}/preview`;
   };
-
-  useEffect(() => {
-    if (previewDoc && previewRef.current) {
-      const html = renderPreviewHTML(previewDoc);
-      previewRef.current.srcdoc = `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;justify-content:center;background:#e5e7eb;padding:20px 0;}div{background:#fff;}</style></head><body>${html}</body></html>`;
-    }
-  }, [previewDoc, organization, docFields, selectedDocs]);
 
   // ===========================
   // Render
@@ -1224,12 +1197,13 @@ export default function Home() {
               </button>
             ))}
           </div>
-          {previewDoc && (
+          {previewDoc && getGoogleDocsPreviewUrl(previewDoc) && (
             <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
               <iframe
-                ref={previewRef}
-                style={{ width: '100%', height: '850px', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', background: '#e5e7eb' }}
+                src={getGoogleDocsPreviewUrl(previewDoc)}
+                style={{ width: '100%', height: '900px', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', background: '#fff' }}
                 title="서류 미리보기"
+                allowFullScreen
               />
             </div>
           )}
