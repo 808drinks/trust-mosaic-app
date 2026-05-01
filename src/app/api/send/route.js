@@ -15,7 +15,7 @@ export async function POST(request) {
     
     const webhookUrl = webhookSettings[0].webhook_url;
 
-    // Build payload for Apps Script
+    // Build payload for Apps Script (V1: Google Docs template approach)
     const payload = {
       organization: body.organization,
       email1: body.email1,
@@ -25,16 +25,31 @@ export async function POST(request) {
       SheetWrite: body.SheetWrite,
       price: body.price,
       price2: body.price2,
-      pdfDocuments: body.pdfDocuments || [],
+      // Static file flags
       BizTemplate: body.BizTemplate,
       BankAccount: body.BankAccount,
       ContractSample: body.ContractSample,
+      // Document generation flags (for Google Docs templates)
+      privacy_document: body.privacy_document,
+      estimate_document: body.estimate_document,
+      estimate_document2: body.estimate_document2,
+      consent_document: body.consent_document,
+      security_agreement_document: body.security_agreement_document,
+      cooperation_letter_document: body.cooperation_letter_document,
+      destruction_confirm_document: body.destruction_confirm_document,
+      // Additional info for template substitution
+      price_korean: body.price_korean,
+      product_spec: body.product_spec,
+      price_korean2: body.price_korean2,
+      product_spec2: body.product_spec2,
+      doc_number: body.doc_number,
+      video_datetime_location: body.video_datetime_location,
+      video_content: body.video_content,
+      disposal_date: body.disposal_date,
     };
     
     const payloadStr = JSON.stringify(payload);
-    const payloadSizeMB = (payloadStr.length / (1024 * 1024)).toFixed(2);
-    console.log(`[send] Webhook URL: ${webhookUrl}`);
-    console.log(`[send] Payload size: ${payloadSizeMB} MB, PDF count: ${payload.pdfDocuments.length}`);
+    console.log(`[send] Webhook: ${webhookUrl}, payload: ${(payloadStr.length / 1024).toFixed(1)}KB`);
     
     // Forward to Google Apps Script
     const response = await fetch(webhookUrl, {
@@ -45,7 +60,7 @@ export async function POST(request) {
     });
     
     const responseText = await response.text();
-    console.log(`[send] Apps Script response status: ${response.status}, body: ${responseText.substring(0, 500)}`);
+    console.log(`[send] Response: ${response.status} - ${responseText.substring(0, 300)}`);
     
     let isSuccess = false;
     if (responseText === 'OK') {

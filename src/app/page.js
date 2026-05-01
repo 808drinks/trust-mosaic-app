@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { generateSelectedPdfs } from '@/lib/generateDocuments';
+import { securityPledgeHTML, privacyConsentHTML } from '@/lib/docTemplates1';
+import { estimateHTML } from '@/lib/docTemplates2';
+import { cooperationLetterHTML, destructionConfirmHTML } from '@/lib/docTemplates3';
 
 // ===========================
 // Helper: 숫자를 한글 가격으로 변환
@@ -507,6 +509,10 @@ export default function Home() {
   const [editMail, setEditMail] = useState(false);
   const toastIdRef = useRef(0);
 
+  // Preview state
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const previewRef = useRef(null);
+
   // ===========================
   // Auto-generate mail content
   // ===========================
@@ -741,21 +747,7 @@ export default function Home() {
         ? parseInt(String(est2Fields.price2).replace(/[^\d]/g, '')) 
         : 0;
 
-      // Generate PDFs client-side (HTML canvas → PDF)
-      addToast('📄 서류 PDF 생성 중...', 'info');
-      const pdfFields = {
-        estimate_document: {
-          ...estimateFields,
-          price_korean: priceNum ? numberToKorean(priceNum) : '',
-        },
-        estimate_document2: {
-          ...est2Fields,
-          price_korean2: price2Num ? numberToKorean(price2Num) : '',
-        },
-        cooperation_letter_document: coopFields,
-        destruction_confirm_document: destructFields,
-      };
-      const pdfDocuments = await generateSelectedPdfs(selectedDocs, pdfFields, organization);
+      addToast('📄 서류 생성 요청 중...', 'info');
 
       const payload = {
         organization,
@@ -769,8 +761,23 @@ export default function Home() {
         BizTemplate: selectedDocs.BizTemplate ? 1 : 0,
         BankAccount: selectedDocs.BankAccount ? 1 : 0,
         ContractSample: selectedDocs.ContractSample ? 1 : 0,
-        // Pre-generated PDF documents
-        pdfDocuments,
+        // Document flags for Apps Script (Google Docs template generation)
+        privacy_document: selectedDocs.privacy_document ? 1 : 0,
+        estimate_document: selectedDocs.estimate_document ? 1 : 0,
+        estimate_document2: selectedDocs.estimate_document2 ? 1 : 0,
+        consent_document: selectedDocs.consent_document ? 1 : 0,
+        security_agreement_document: selectedDocs.security_agreement_document ? 1 : 0,
+        cooperation_letter_document: selectedDocs.cooperation_letter_document ? 1 : 0,
+        destruction_confirm_document: selectedDocs.destruction_confirm_document ? 1 : 0,
+        // Additional info for template substitution
+        price_korean: priceNum ? numberToKorean(priceNum) : '',
+        product_spec: estimateFields.product_spec || '',
+        price_korean2: price2Num ? numberToKorean(price2Num) : '',
+        product_spec2: est2Fields.product_spec2 || '',
+        doc_number: coopFields.doc_number || '',
+        video_datetime_location: coopFields.video_datetime_location || '',
+        video_content: coopFields.video_content || '',
+        disposal_date: destructFields.disposal_date || '',
       };
 
       const res = await fetch('/api/send', {
@@ -792,6 +799,60 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // ===========================
+  // Preview
+  // ===========================
+  const PREVIEW_DOCS = [
+    { key: 'privacy_document', label: '보안서약서' },
+    { key: 'consent_document', label: '개인정보처리동의서' },
+    { key: 'estimate_document', label: '견적서' },
+    { key: 'estimate_document2', label: '견적서2' },
+    { key: 'security_agreement_document', label: '보안확약서' },
+    { key: 'cooperation_letter_document', label: '협조공문' },
+    { key: 'destruction_confirm_document', label: '개인정보 파기 확인서' },
+  ];
+
+  const getPreviewableKeys = () => PREVIEW_DOCS.filter(d => selectedDocs[d.key]);
+
+  const renderPreviewHTML = (key) => {
+    const date = new Date().toISOString().slice(0, 10);
+    const org = organization || '(기관명 미입력)';
+    const est = docFields.estimate_document || {};
+    const est2 = docFields.estimate_document2 || {};
+    const coop = docFields.cooperation_letter_document || {};
+    const dest = docFields.destruction_confirm_document || {};
+    const priceNum = est.price ? parseInt(String(est.price).replace(/[^\d]/g, '')) : 0;
+    const price2Num = est2.price2 ? parseInt(String(est2.price2).replace(/[^\d]/g, '')) : 0;
+    const signUrl = '/sign.png';
+    const stampUrl = '/stamp.png';
+
+    switch (key) {
+      case 'security_agreement_document':
+        return securityPledgeHTML({ organization: org, date, signDataUrl: signUrl });
+      case 'privacy_document':
+        return privacyConsentHTML({ organization: org, date, stampDataUrl: stampUrl });
+      case 'consent_document':
+        return privacyConsentHTML({ organization: org, date, stampDataUrl: stampUrl });
+      case 'estimate_document':
+        return estimateHTML({ organization: org, date, stampDataUrl: stampUrl, price: est.price, priceKorean: priceNum ? numberToKorean(priceNum) : '', spec: est.product_spec || '' });
+      case 'estimate_document2':
+        return estimateHTML({ organization: org, date, stampDataUrl: stampUrl, price: est2.price2, priceKorean: price2Num ? numberToKorean(price2Num) : '', spec: est2.product_spec2 || '' });
+      case 'cooperation_letter_document':
+        return cooperationLetterHTML({ organization: org, date, stampDataUrl: stampUrl, docNumber: coop.doc_number || '', videoInfo: coop.video_datetime_location || '', videoContent: coop.video_content || '' });
+      case 'destruction_confirm_document':
+        return destructionConfirmHTML({ organization: org, date, stampDataUrl: stampUrl, signDataUrl: signUrl, disposalDate: dest.disposal_date || '' });
+      default:
+        return '<p>미리보기 없음</p>';
+    }
+  };
+
+  useEffect(() => {
+    if (previewDoc && previewRef.current) {
+      const html = renderPreviewHTML(previewDoc);
+      previewRef.current.srcdoc = `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;justify-content:center;background:#e5e7eb;padding:20px 0;}div{background:#fff;}</style></head><body>${html}</body></html>`;
+    }
+  }, [previewDoc, organization, docFields, selectedDocs]);
 
   // ===========================
   // Render
@@ -1136,6 +1197,44 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Document Preview Section */}
+      {getPreviewableKeys().length > 0 && (
+        <div className="card" style={{ marginTop: 'var(--space-6)' }}>
+          <div className="card-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <div className="card-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div>
+                <h3>서류 미리보기</h3>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>선택한 서류가 어떻게 생성되는지 미리 확인합니다</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: 'var(--space-4)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+            {getPreviewableKeys().map(d => (
+              <button
+                key={d.key}
+                className={`btn ${previewDoc === d.key ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setPreviewDoc(previewDoc === d.key ? null : d.key)}
+                style={{ fontSize: 'var(--font-size-sm)' }}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          {previewDoc && (
+            <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
+              <iframe
+                ref={previewRef}
+                style={{ width: '100%', height: '850px', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', background: '#e5e7eb' }}
+                title="서류 미리보기"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       <SavedMessageModal
