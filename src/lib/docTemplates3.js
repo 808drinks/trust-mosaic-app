@@ -8,7 +8,7 @@ export function cooperationLetterHTML({ organization, date, docNumber, videoInfo
       <span style="font-size:22px;font-weight:bold;vertical-align:middle;">트러스트 모자이크</span>
     </div>
     <p style="text-align:center;font-size:12px;color:#555;margin:0 0 20px;">
-      경기도 용인시 강남서로 52 / 010-3904-5597 / trustmozaik@trustmozaik-official.KR
+      경기도 용인시 강남서로 52 / 010-2379-2759 / trustmozaik@trustmozaik-official.KR
     </p>
 
     <div style="display:flex;justify-content:space-between;font-size:13px;line-height:2.2;">

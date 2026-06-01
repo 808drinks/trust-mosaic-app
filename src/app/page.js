@@ -130,7 +130,7 @@ function generateMailContent(selectedDocs, docFields) {
     body += '홈페이지 링크 (링크 : https://trustmozaik.kr/)\n\n';
   }
 
-  body += '추가적으로 필요한 서류나 문의사항이 있으실 경우 010-3904-5597로 연락주시면 안내드리겠습니다 ^^ (보안확약서, 위탁계약서 등)\n\n';
+  body += '추가적으로 필요한 서류나 문의사항이 있으실 경우 010-2379-2759로 연락주시면 안내드리겠습니다 ^^ (보안확약서, 위탁계약서 등)\n\n';
 
   // 붙임
   const attachments = [];

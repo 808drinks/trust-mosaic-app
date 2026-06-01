@@ -26,7 +26,7 @@ export function estimateHTML({ organization, date, price, priceKorean, spec, sta
       <tr>
         <td style="border:1px solid #4a7c59;padding:8px 12px;text-align:center;" colspan="2">${priceKorean}</td>
         <td style="border:1px solid #4a7c59;padding:8px;">전화번호</td>
-        <td style="border:1px solid #4a7c59;padding:8px;">010-3904-5597</td>
+        <td style="border:1px solid #4a7c59;padding:8px;">010-2379-2759</td>
       </tr>
       <tr>
         <td style="border:1px solid #4a7c59;padding:8px 12px;text-align:center;" colspan="2">아래 견적은 견적일로부터 7일동안 유효함</td>
