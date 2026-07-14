@@ -89,11 +89,18 @@ function generateMailContent(selectedDocs, docFields) {
   if (hasAnyEstimate && nonEstimateDocs.length === 0) {
     body += '견적서 송부 드립니다.\n\n';
   } else if (hasAnyEstimate) {
-    body += '개인정보 관련 서류 및 견적서 보내드립니다.\n\n';
+    body += '개인정보 관련 서류 보내드립니다.\n\n';
   } else if (active.length === 1 && active[0] === 'BizTemplate') {
     body += '사업자등록증 서류 보내드립니다.\n\n';
   } else {
     body += '개인정보 관련 서류 보내드립니다.\n\n';
+  }
+
+  // 모자이크 관련 안내 (보안서약서 또는 개인정보 서류 포함 시)
+  const hasPrivacyRelated = selectedDocs.privacy_document || selectedDocs.consent_document;
+  if (hasPrivacyRelated) {
+    body += '영상 보내주실때 모자이크 제외대상도 캡처하여 첨부해주시길 바랍니다.\n\n';
+    body += '모자이크 방식은 기본으로 얼굴 모자이크(블러)방식으로 별도 요청이 없으면 얼굴 모자이크 방식으로 진행됩니다.\n\n';
   }
 
   // 서류별 안내 메시지
@@ -125,7 +132,8 @@ function generateMailContent(selectedDocs, docFields) {
 
   // 견적서 결제 안내
   if (hasAnyEstimate) {
-    body += '계좌 이체 시 계좌번호 : 카카오 3333-21-2104308 (예금주 : 정연화), 현금영수증 신청시 사업자번호 또는 핸드폰 번호 알려주시면 됩니다.\n\n';
+    body += '계좌번호 : 카카오 3333-21-2104308 (예금주 : 정연화), 현금영수증 신청시 사업자번호 또는 핸드폰 번호 알려주시면 됩니다.\n';
+    body += '(계좌 이체 시 입금자명을 반드시 기관명(예:oo학교. oo경찰서 등)으로 기재하여주시기를 바랍니다.)\n\n';
     body += '홈페이지 결제시 트러스트 모자이크 홈페이지 하단에서 카드결제 ISP 로 진행해주시면 됩니다.\n';
     body += '홈페이지 링크 (링크 : https://trustmozaik.kr/)\n\n';
   }
