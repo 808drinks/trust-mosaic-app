@@ -107,8 +107,7 @@ function generateMailContent(selectedDocs, docFields) {
   const notes = [];
   if (selectedDocs.privacy_document) notes.push("* '보안서약서' → 기관 측에서 보관하시면 됩니다");
   if (selectedDocs.consent_document) {
-    notes.push("* '개인정보처리동의서' → 제외인물 서명후 기관에서 보관해 주시면 됩니다.");
-    notes.push("\n서명 받으신 뒤 저희에게도 스캔 또는 촬영하여 보내주시면 감사드리겠습니다. ^^");
+    notes.push("* '개인정보처리동의서' → 제외인물 서명후 기관에서 보관해 주시면 됩니다. 제외인물의 개인정보를 활용하기 위해서 관리소에서 가지고 계셔야하는 문서입니다.서명 받으신 뒤 저희에게도 스캔 또는 촬영하여 보내주시면 감사드리겠습니다. ^^");
   }
   if (selectedDocs.security_agreement_document) notes.push("* '보안확약서' → 기관 측에서 보관하시면 됩니다");
   if (selectedDocs.cooperation_letter_document) notes.push("* '공문서' → 기관 측에서 보관하시면 됩니다");
